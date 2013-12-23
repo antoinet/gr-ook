@@ -30,7 +30,7 @@ class my_top_block(stdgui2.std_top_block):
         ## Variable
         self._samp_rate = 1000000
         self._freq = 433.92e6
-        self._unit = 2e-3
+        self._unit = 5.33e-4 # 533us unit pulse width
         
         # init packet source
         self._pkt_source = blocks.message_source(gr.sizeof_char, 8)
@@ -68,10 +68,14 @@ class my_top_block(stdgui2.std_top_block):
         )
         vbox.Add(self._waterfall_sink.win, 1, wx.EXPAND)
         
-        # init button
-        self._button = wx.Button(panel, id=wx.ID_ANY, label="Press Me!")
-        self._button.Bind(wx.EVT_BUTTON, self.foo)
-        vbox.Add(self._button, 1, wx.EXPAND)
+        # init buttons
+        self._buttonON = wx.Button(panel, id=wx.ID_ANY, label="On")
+        self._buttonON.Bind(wx.EVT_BUTTON, self.onButtonON)
+        vbox.Add(self._buttonON, 1, wx.EXPAND)
+        
+        self._buttonOFF = wx.Button(panel, id=wx.ID_ANY, label="Off")
+        self._buttonOFF.Bind(wx.EVT_BUTTON, self.onButtonOFF)
+        vbox.Add(self._buttonOFF, 1, wx.EXPAND)
         
         # init uhd sink (USRP)
         self._uhd_sink = uhd.usrp_sink(device_addr='', stream_args=uhd.stream_args('fc32'))
@@ -81,24 +85,21 @@ class my_top_block(stdgui2.std_top_block):
         self._uhd_sink.set_antenna('TX/RX', 0)
         
         # init uhd source (USRP)
-        #self._uhd_source = uhd.usrp_source(device_addr='', stream_args=uhd.stream_args('fc32'))
-        #self._uhd_source.set_samp_rate(self._samp_rate)
-        #self._uhd_source.set_center_freq(433.935e6, 0)
-        #self._uhd_source.set_gain(0, 0)
-        #self._uhd_source.set_antenna("RX2", 0)
+        self._uhd_source = uhd.usrp_source(device_addr='', stream_args=uhd.stream_args('fc32'))
+        self._uhd_source.set_samp_rate(self._samp_rate)
+        self._uhd_source.set_center_freq(433.935e6, 0)
+        self._uhd_source.set_gain(0, 0)
+        self._uhd_source.set_antenna("RX2", 0)
         
         # wire everything up
         # tx path
         self.connect(self._pkt_source, self._modulator)
         self.connect(self._modulator, self._uhd_sink)
-        self.connect(self._modulator, self._scope_sink)
-        self.connect(self._modulator, self._waterfall_sink)
-        self.connect(self._modulator, self._file_sink)
         
         # rx path
-        #self.connect(self._uhd_source, (self._scope_sink, 0))
-        #self.connect(self._uhd_source, (self._waterfall_sink, 0))
-        #self.connect(self._uhd_source, self._file_sink)
+        self.connect(self._uhd_source, (self._scope_sink, 0))
+        self.connect(self._uhd_source, (self._waterfall_sink, 0))
+        self.connect(self._uhd_source, self._file_sink)
         
     def send_pkt(self, payload='',eof=False):
         if eof:
@@ -107,10 +108,13 @@ class my_top_block(stdgui2.std_top_block):
             msg = gr.message_from_string(payload)
         return self._pkt_source.msgq().insert_tail(msg)
 
-    def foo(self, event):
-        print "foo!"
-        self.send_pkt("\x30\xA6\x84\x00")
-
+    def onButtonON(self, event):
+        self.send_pkt("\x5A\x55\xA6\x59\x95\x65\x40")
+        self.send_pkt("\x5A\x55\xA6\x59\x95\x65\x40")
+    
+    def onButtonOFF(self, event):
+        self.send_pkt("\x5A\x55\xA6\x5A\x55\x65\x40")
+        self.send_pkt("\x5A\x55\xA6\x5A\x55\x65\x40")
 
 if __name__ == '__main__':
     try:

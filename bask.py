@@ -39,7 +39,7 @@ class bask_mod(gr.hier_block2):
         self.connect(*self._blocks)
     
     def bits_per_symbol(self=None):
-        return 1
+        return 2
 
 
 class bask_map(gr.interp_block):
@@ -54,9 +54,9 @@ class bask_map(gr.interp_block):
     
     def work(self, input_items, output_items):
         for i in range(len(input_items[0])):
-            output_items[0][3*i] = 1
-            output_items[0][3*i + 1] = input_items[0][i]
-            output_items[0][3*i + 2] = 0
+            output_items[0][3*i] = int(input_items[0][i] > 0)
+            output_items[0][3*i + 1] = (input_items[0][i] >> 1) & 0x01
+            output_items[0][3*i + 2] = int(input_items[0][i] > 2)
         return len(output_items[0])
 
 
