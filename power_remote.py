@@ -41,42 +41,8 @@ class power_remote(stdgui2.std_top_block):
         self._freq = 433.92e6
         self._unit = 5.33e-4 # 533us unit pulse width
         
-        # init packet source
         self._pkt_source = blocks.message_source(gr.sizeof_char, 8)
-        
-        # init modulator
         self._modulator = bask_mod(samples_per_symbol=int(self._unit*self._samp_rate))
-        
-        # init file sink
-        self._file_sink = blocks.file_sink(gr.sizeof_gr_complex, "/tmp/out.dat")
-        
-        # init scope sink
-#        self._scope_sink = scopesink2.scope_sink_c(
-#            panel,
-#            title="Scope Plot",
-#            sample_rate=self._samp_rate,
-#            num_inputs=1,
-#            v_scale=0.01,
-#        	v_offset=0,
-#        	t_scale=0.5e-3
-#        )
-#        vbox.Add(self._scope_sink.win, 1, wx.EXPAND)
-        
-        # init waterfall sink
-#        self._waterfall_sink = waterfallsink2.waterfall_sink_c(
-#            panel,
-#            baseband_freq=self._freq,
-#            dynamic_range=100,
-#            ref_level=0,
-#            ref_scale=2.0,
-#            sample_rate=self._samp_rate,
-#            fft_size=512,
-#            fft_rate=15,
-#            average=False,
-#            avg_alpha=None
-#        )
-#        vbox.Add(self._waterfall_sink.win, 1, wx.EXPAND)
-
         self.init_gui()
         
         # init uhd sink (USRP)
@@ -86,22 +52,8 @@ class power_remote(stdgui2.std_top_block):
         self._uhd_sink.set_gain(15, 0)
         self._uhd_sink.set_antenna('TX/RX', 0)
         
-        # init uhd source (USRP)
-#        self._uhd_source = uhd.usrp_source(device_addr='', stream_args=uhd.stream_args('fc32'))
-#        self._uhd_source.set_samp_rate(self._samp_rate)
-#        self._uhd_source.set_center_freq(433.935e6, 0)
-#        self._uhd_source.set_gain(0, 0)
-#        self._uhd_source.set_antenna("RX2", 0)
-        
         # wire everything up
-        # tx path
-#        self.connect(self._pkt_source, self._modulator, self._file_sink)
         self.connect(self._pkt_source, self._modulator, self._uhd_sink)
-        
-        # rx path
-#        self.connect(self._uhd_source, (self._scope_sink, 0))
-#        self.connect(self._uhd_source, (self._waterfall_sink, 0))
-#        self.connect(self._uhd_source, self._file_sink)
 
     def init_gui(self):
         self._vbox.AddSpacer(20)
@@ -163,14 +115,6 @@ class power_remote(stdgui2.std_top_block):
             dp = self._panel.FindWindowByName(name)
             addr += '10' if dp.GetValue() else '01'
         return addr
-
-    def onButtonON(self, event):
-        self.send_pkt("\x5A\x55\xA6\x59\x95\x65\x40")
-        self.send_pkt("\x5A\x55\xA6\x59\x95\x65\x40")
-    
-    def onButtonOFF(self, event):
-        self.send_pkt("\x5A\x55\xA6\x5A\x55\x65\x40")
-        self.send_pkt("\x5A\x55\xA6\x5A\x55\x65\x40")
 
 if __name__ == '__main__':
     try:
